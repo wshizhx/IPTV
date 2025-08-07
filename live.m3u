@@ -25,11 +25,11 @@ https://mursor.ottiptv.cc/bst/cctv10hd@4000000.m3u8
 https://mursor.ottiptv.cc/bst/cctv11hd4m@4000000.m3u8
 #EXTINF:-1,tvg-id="CCTV12" tvg-name="CCTV12" tvg-logo="https://11.112114.xyz/logo/CCTV12.png" group-title="主力-央视",CCTV-12HD-主力
 https://mursor.ottiptv.cc/bst/cctv12hd4m@4000000.m3u8
-#EXTINF:-1,tvg-id="BTV新闻" tvg-name="BTV新闻" tvg-logo="https://11.112114.xyz/logo/CCTV13.png" group-title="主力-央视",CCTV-13HD-主力
+#EXTINF:-1,tvg-id="CCTV13" tvg-name="CCTV13" tvg-logo="https://11.112114.xyz/logo/CCTV13.png" group-title="主力-央视",CCTV-13HD-主力
 https://mursor.ottiptv.cc/bst/cctv13hd4m@4000000.m3u8
-#EXTINF:-1,tvg-id="IPTV少儿动画" tvg-name="IPTV少儿动画" tvg-logo="https://11.112114.xyz/logo/CCTV14.png" group-title="主力-央视",CCTV-14HD-主力
+#EXTINF:-1,tvg-id="CCTV14" tvg-name="CCTV14" tvg-logo="https://11.112114.xyz/logo/CCTV14.png" group-title="主力-央视",CCTV-14HD-主力
 https://mursor.ottiptv.cc/bst/cctvsehd@4000000.m3u8
-#EXTINF:-1,tvg-id="动感音乐" tvg-name="动感音乐" tvg-logo="https://11.112114.xyz/logo/CCTV15.png" group-title="主力-央视",CCTV-15HD-主力
+#EXTINF:-1,tvg-id="CCTV15" tvg-name="CCTV15" tvg-logo="https://11.112114.xyz/logo/CCTV15.png" group-title="主力-央视",CCTV-15HD-主力
 https://mursor.ottiptv.cc/bst/cctvyyhd4m@4000000.m3u8
 #EXTINF:-1,tvg-id="CCTV16" tvg-name="CCTV16" tvg-logo="https://11.112114.xyz/logo/CCTV16.png" group-title="主力-央视",CCTV-16HD-主力
 https://mursor.ottiptv.cc/bst/cctv16hd4m@4000000.m3u8

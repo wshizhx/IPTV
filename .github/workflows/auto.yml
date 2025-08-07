@@ -28,6 +28,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}.git
-          git pull --rebase origin main   # 先拉取并自动 rebase
+          # 先提交本地变更，再拉取远程，最后推送
           git add live.m3u
-          git diff --cached --quiet || (git commit -m "auto update" && git push)
+          git diff --cached --quiet || git commit -m "auto update $(date -u +%F_%H:%M)"
+          git pull --rebase origin main || true
+          git push

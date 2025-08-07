@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 filter_m3u.py
-1. 仅保留 主力-央视 / 主力-卫视 / 主力-其他
+执行顺序：
+1. 先挑出 group-title="主力-央视"/"主力-卫视"/"主力-其他" 三个组
 2. 央视组内删除 4 条标清流
-3. 把 CCTV-5+HD-主力 移动到 CCTV-5HD-主力 之后
-4. 重命名频道显示名
-5. 统一 tvg-id / tvg-name 为 CCTV13 / CCTV14 / CCTV15
+3. CCTV-5+HD 紧跟 CCTV-5HD
+4. 统一 CCTV13/14/15 的 id/name/显示名
+5. 最后：去掉 group-title 里的 "主力-" 前缀 及 频道名末尾的 "-主力"
 """
 
 import re
@@ -16,31 +17,25 @@ import requests
 SRC_URL = "https://sub.ottiptv.cc/iptv.m3u"  # 换成你的源
 OUTPUT  = "live.m3u"
 
+# 允许的分组（先保留完整前缀，第5步再统一去掉）
 KEEP_GROUPS = {"主力-央视", "主力-卫视", "主力-其他"}
-DELETE_NAMES  = {"CCTV-3-主力", "CCTV-5-主力", "CCTV-6-主力", "CCTV-8-主力"}
+# 央视组内需要删除的频道名（原始名）
+DELETE_NAMES = {"CCTV-3-主力", "CCTV-5-主力", "CCTV-6-主力", "CCTV-8-主力"}
 
-# 频道名映射
-RENAME_MAP = {
-    "CCTV-新闻HD-主力": "CCTV-13HD-主力",
-    "CCTV-少儿HD-主力": "CCTV-14HD-主力",
-    "CCTV-音乐HD-主力": "CCTV-15HD-主力"
+# 央视频道映射：原始显示名 -> (新显示名, 新tvg-id, 新tvg-name)
+CCTV_RENAME = {
+    "CCTV-新闻HD-主力": ("CCTV-13HD", "CCTV13", "CCTV13"),
+    "CCTV-少儿HD-主力": ("CCTV-14HD", "CCTV14", "CCTV14"),
+    "CCTV-音乐HD-主力": ("CCTV-15HD", "CCTV15", "CCTV15"),
 }
 
-# tvg-id / tvg-name 映射
-ID_NAME_FIX = {
-    "CCTV-新闻HD-主力": ("CCTV13", "CCTV13"),
-    "CCTV-少儿HD-主力": ("CCTV14", "CCTV14"),
-    "CCTV-音乐HD-主力": ("CCTV15", "CCTV15")
-}
-
-# ---------- 通用工具 ----------
+# ---------- 工具 ----------
 def parse_m3u(text: str):
-    lines = [ln.strip() for ln in text.splitlines()]
     items, buf = [], []
-    for ln in lines:
+    for ln in text.splitlines():
+        ln = ln.strip()
         if ln.startswith("#EXTINF"):
-            if buf:
-                buf.clear()
+            if buf: buf.clear()
             buf.append(ln)
         elif ln and not ln.startswith("#"):
             buf.append(ln)
@@ -56,12 +51,12 @@ def group_of(extinf: str) -> str:
 def channel_name(extinf: str) -> str:
     return extinf.split(",")[-1].strip()
 
-def fix_extinf(extinf: str, new_name: str, new_id: str, new_name_attr: str) -> str:
-    # 替换频道显示名
-    extinf = re.sub(r'(#EXTINF:.*,).*$', r'\1' + new_name, extinf)
-    # 替换 tvg-id 和 tvg-name
-    extinf = re.sub(r'tvg-id="[^"]*"', f'tvg-id="{new_id}"', extinf)
-    extinf = re.sub(r'tvg-name="[^"]*"', f'tvg-name="{new_name_attr}"', extinf)
+def fix_extinf(extinf: str, new_name: str, new_id: str = None, new_name_attr: str = None) -> str:
+    extinf = re.sub(r"(#EXTINF:.*,).*$", r"\1" + new_name, extinf)
+    if new_id:
+        extinf = re.sub(r'tvg-id="[^"]*"', f'tvg-id="{new_id}"', extinf)
+    if new_name_attr:
+        extinf = re.sub(r'tvg-name="[^"]*"', f'tvg-name="{new_name_attr}"', extinf)
     return extinf
 
 # ---------- 主流程 ----------
@@ -69,36 +64,37 @@ def main():
     try:
         raw = requests.get(SRC_URL, timeout=30).text
     except Exception as e:
-        print("下载源失败:", e, file=sys.stderr)
+        print("下载失败:", e)
         sys.exit(1)
 
     items = parse_m3u(raw)
-    filtered = []
 
-    for extinf, url in items:
-        grp = group_of(extinf)
-        if grp not in KEEP_GROUPS:
-            continue
-        name = channel_name(extinf)
-        if grp == "主力-央视" and name in DELETE_NAMES:
-            continue
-        filtered.append((extinf, url))
+    # 1️⃣ 先挑出三个组
+    filtered = [
+        (extinf, url) for extinf, url in items
+        if group_of(extinf) in KEEP_GROUPS
+    ]
 
-    # 央视单独处理
+    # 2️⃣ 拆分央视组
     cctv_items  = [t for t in filtered if group_of(t[0]) == "主力-央视"]
     other_items = [t for t in filtered if group_of(t[0]) != "主力-央视"]
 
-    # 重命名+改ID+改NAME
+    # 3️⃣ 央视组内删除 4 条标清流
+    cctv_items = [
+        (extinf, url) for extinf, url in cctv_items
+        if channel_name(extinf) not in DELETE_NAMES
+    ]
+
+    # 4️⃣ 统一 CCTV13/14/15 的显示名、id、name
     processed = []
     for extinf, url in cctv_items:
         name = channel_name(extinf)
-        if name in RENAME_MAP:
-            new_name = RENAME_MAP[name]
-            new_id, new_name_attr = ID_NAME_FIX[name]
+        if name in CCTV_RENAME:
+            new_name, new_id, new_name_attr = CCTV_RENAME[name]
             extinf = fix_extinf(extinf, new_name, new_id, new_name_attr)
         processed.append((extinf, url))
 
-    # 调整顺序：CCTV-5+HD-主力 紧跟 CCTV-5HD-主力
+    # 5️⃣ CCTV-5+HD 紧跟 CCTV-5HD
     idx5 = idx5p = None
     for i, (e, _) in enumerate(processed):
         n = channel_name(e)
@@ -111,16 +107,28 @@ def main():
         insert = idx5 + 1 if idx5p > idx5 else idx5
         processed.insert(insert, item5p)
 
-    # 合并
+    # 6️⃣ 合并
     final = processed + other_items
 
+    # 7️⃣ 最后统一清理：
+    #   - 去掉 group-title 里的 "主力-"
+    #   - 去掉频道名末尾的 "-主力"
+    cleaned = []
+    for extinf, url in final:
+        # 去掉 group-title 里的 "主力-"
+        extinf = re.sub(r'group-title="主力-(.*?)"', r'group-title="\1"', extinf)
+        # 去掉频道名末尾的 "-主力"
+        extinf = re.sub(r'(#EXTINF:.*,.*)-主力$', r'\1', extinf)
+        cleaned.append((extinf, url))
+
+    # 8️⃣ 写出
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write("#EXTM3U\n")
-        for extinf, url in final:
+        for extinf, url in cleaned:
             f.write(extinf + "\n")
             f.write(url + "\n")
 
-    print("已生成", OUTPUT, "共", len(final), "条频道")
+    print("已生成", OUTPUT, "共", len(cleaned), "条频道")
 
 if __name__ == "__main__":
     main()

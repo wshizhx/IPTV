@@ -23,10 +23,10 @@ jobs:
       - name: Run filter
         run: python filter_m3u.py
 
-      - name: Commit & push
+     - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://${{ secrets.PAT }}@github.com/${{ github.repository }}.git
           git add live.m3u
-          # 有变化才 commit，避免空 commit
           git diff --cached --quiet || (git commit -m "auto update" && git push)

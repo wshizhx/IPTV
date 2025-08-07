@@ -2,7 +2,7 @@ name: filter-m3u
 
 on:
   schedule:
-    - cron: "0 */12 * * *"      # 每 12 小时整点
+    - cron: "10 */6 * * *"      # 每 12 小时整点
   workflow_dispatch:           # 允许手动触发（测试用）
 
 jobs:
